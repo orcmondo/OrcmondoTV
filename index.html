@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Orcmondo Live</title>
-  <meta name="description" content="Watch Orcmondo live on Twitch with chat, status, and an orc-themed layout." />
+  <meta name="description" content="Watch Orcmondo live on Twitch with chat, status, and TikTok links." />
 
   <style>
     :root{
@@ -358,6 +358,21 @@
     }
     @keyframes loadbar{ to { width: 100%; } }
 
+    /* Right column stack */
+    .rightcol{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .tiktok-embed-wrap{ padding:12px; }
+    .tiktok-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding:12px;
+      border-top: 1px solid rgba(52,255,122,.14);
+    }
+
     /* Mobile */
     @media (max-width: 980px){
       header{ position: static; }
@@ -380,7 +395,6 @@
   <div class="intro" id="intro">
     <div class="intro-card">
       <div class="intro-mark" aria-hidden="true">
-        <!-- Simple rune-like mark -->
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
           <path d="M12 2l2.6 5.4L20 10l-5.4 2.6L12 18l-2.6-5.4L4 10l5.4-2.6L12 2z" stroke="rgba(52,255,122,.95)" stroke-width="1.4"/>
           <path d="M12 6v12" stroke="rgba(52,255,122,.65)" stroke-width="1.2"/>
@@ -388,7 +402,7 @@
       </div>
       <div class="intro-text">
         <h1>ORCMONDO — ENTERING THE WAAAGH</h1>
-        <p>Loading stream + chat. If the embed doesn’t load, make sure the <b>parent</b> domains are set correctly (see CONFIG).</p>
+        <p>Loading stream + chat. If the embed doesn’t load, the <b>parent</b> domain is auto-set to your GitHub Pages domain.</p>
         <div class="intro-bar"><span></span></div>
       </div>
     </div>
@@ -421,7 +435,7 @@
         <div class="status-actions">
           <button class="btn primary" id="btnToggleChat" type="button">Toggle Chat</button>
           <button class="btn" id="btnToggleMulti" type="button">Multi-stream</button>
-          <button class="btn danger" id="btnOfflineAction" type="button" title="Used when offline">Go to Channel</button>
+          <button class="btn danger" id="btnOfflineAction" type="button">Go to Twitch</button>
         </div>
       </div>
     </header>
@@ -440,12 +454,11 @@
         <div class="player-wrap">
           <div id="twitch-embed"></div>
 
-          <!-- OFFLINE overlay -->
+          <!-- OFFLINE overlay (NO REDIRECT) -->
           <div class="overlay-offline" id="offlineOverlay">
             <div class="big">OFFLINE (for now).</div>
             <div class="small" id="offlineMsg">
-              If you’re hosting this on a domain, make sure your Twitch embed “parent” is set correctly.
-              You can also auto-redirect to the channel page.
+              Stream looks offline. You can retry the player or open the Twitch channel.
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
               <button class="btn primary" id="btnRetry" type="button">Retry Player</button>
@@ -454,58 +467,93 @@
           </div>
         </div>
 
-        <!-- Channel selector + settings -->
         <div class="controls" id="channelControls"></div>
-
-        <!-- Multi-stream panel (optional) -->
         <div class="multistream" id="multistreamGrid"></div>
       </section>
 
-      <!-- CHAT -->
-      <aside class="card" id="chatCard">
-        <div class="card-head">
-          <h2>Chat</h2>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <button class="btn" id="btnPopoutChat" type="button">Popout</button>
+      <!-- RIGHT COLUMN (Chat + TikTok) -->
+      <aside class="rightcol">
+        <!-- CHAT -->
+        <section class="card" id="chatCard">
+          <div class="card-head">
+            <h2>Chat</h2>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn" id="btnPopoutChat" type="button">Popout</button>
+            </div>
           </div>
-        </div>
-        <div class="chat-wrap">
-          <iframe id="chat-frame" title="Twitch Chat"></iframe>
-        </div>
+          <div class="chat-wrap">
+            <iframe id="chat-frame" title="Twitch Chat"></iframe>
+          </div>
+        </section>
+
+        <!-- TIKTOK -->
+        <section class="card" id="tiktokCard">
+          <div class="card-head">
+            <h2>TikTok Live</h2>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn primary" id="btnOpenTikTokLive" type="button">Open Live</button>
+              <button class="btn" id="btnOpenTikTokProfile" type="button">Profile</button>
+            </div>
+          </div>
+
+          <div class="tiktok-embed-wrap" id="tiktokEmbedWrap">
+            <!-- TikTok Creator Profile Embed -->
+            <blockquote
+              class="tiktok-embed"
+              id="tiktokCreatorEmbed"
+              data-embed-type="creator"
+              cite="https://www.tiktok.com/@orcmondo"
+              data-unique-id="orcmondo"
+              style="max-width: 720px; min-width: 288px;"
+            >
+              <section>
+                <a target="_blank" href="https://www.tiktok.com/@orcmondo?refer=creator_embed" rel="noopener noreferrer">
+                  @orcmondo
+                </a>
+              </section>
+            </blockquote>
+          </div>
+
+          <div class="tiktok-actions">
+            <button class="btn danger" id="btnOpenTikTokLive2" type="button">Go to TikTok Live</button>
+            <button class="btn" id="btnOpenTikTokVods" type="button">Videos</button>
+          </div>
+        </section>
       </aside>
     </main>
   </div>
 
   <!-- Twitch embed JS -->
   <script src="https://player.twitch.tv/js/embed/v1.js"></script>
+  <!-- TikTok embed JS -->
+  <script async src="https://www.tiktok.com/embed.js"></script>
 
   <script>
     /***********************
-     * CONFIG (EDIT THIS!)
+     * CONFIG
      ***********************/
     const CONFIG = {
-      // Your default channel
       defaultChannel: "orcmondo_",
-
-      // Add more channels here for “multi-stream” + quick switching
       channels: [
         "orcmondo_",
-        // "orcmondo",        // add more if you want
-        // "another_channel",
-        // "friend_channel"
+        // Add more channels here for multistream:
+        // "somefriend",
+        // "anotherfriend"
       ],
 
-      // REQUIRED: Twitch embed requires a “parent” list that matches your domain(s).
-      // For local testing, "localhost" is fine.
-      // For hosting, add your domain(s), e.g. ["orcmondo.com", "www.orcmondo.com"] or ["orcmondo.github.io"].
-      parentDomains: ["window.location.hostname"],
+      // GitHub Pages friendly: Twitch requires the parent domain
+      parentDomains: [window.location.hostname],
 
-      // Offline behavior:
+      // NO OFFLINE REDIRECT
       offlineRedirectEnabled: false,
-      offlineRedirectDelayMs: 9000, // set 0 to disable delay (still uses button)
+      offlineRedirectDelayMs: 0,
       offlineRedirectUrl: (channel) => `https://www.twitch.tv/${channel}`,
 
-      // UI defaults
+      // TikTok
+      tiktokHandle: "orcmondo",
+      tiktokLiveUrl: "https://www.tiktok.com/@orcmondo/live",
+
+      // UI
       chatStartsVisible: true,
       multiStreamStartsVisible: false,
     };
@@ -515,11 +563,9 @@
      ***********************/
     let currentChannel = CONFIG.defaultChannel;
     let player = null;
-    let offlineRedirectTimer = null;
 
     const els = {
       intro: document.getElementById("intro"),
-      app: document.getElementById("app"),
       liveDot: document.getElementById("liveDot"),
       statusTitle: document.getElementById("statusTitle"),
       statusSub: document.getElementById("statusSub"),
@@ -533,9 +579,13 @@
       btnOfflineAction: document.getElementById("btnOfflineAction"),
       btnPopoutChat: document.getElementById("btnPopoutChat"),
       chatFrame: document.getElementById("chat-frame"),
-      chatCard: document.getElementById("chatCard"),
       channelControls: document.getElementById("channelControls"),
       multistreamGrid: document.getElementById("multistreamGrid"),
+
+      btnOpenTikTokLive: document.getElementById("btnOpenTikTokLive"),
+      btnOpenTikTokLive2: document.getElementById("btnOpenTikTokLive2"),
+      btnOpenTikTokProfile: document.getElementById("btnOpenTikTokProfile"),
+      btnOpenTikTokVods: document.getElementById("btnOpenTikTokVods"),
     };
 
     /***********************
@@ -545,38 +595,12 @@
       els.statusTitle.textContent = title || "";
       els.statusSub.textContent = sub || "";
 
-      if (live) {
-        els.liveDot.classList.add("live");
-      } else {
-        els.liveDot.classList.remove("live");
-      }
+      if (live) els.liveDot.classList.add("live");
+      else els.liveDot.classList.remove("live");
     }
 
     function showOfflineOverlay(show) {
       els.offlineOverlay.classList.toggle("show", !!show);
-    }
-
-    function clearOfflineRedirect() {
-      if (offlineRedirectTimer) {
-        clearTimeout(offlineRedirectTimer);
-        offlineRedirectTimer = null;
-      }
-    }
-
-    function scheduleOfflineRedirect() {
-      clearOfflineRedirect();
-      if (!CONFIG.offlineRedirectEnabled) return;
-      const delay = Number(CONFIG.offlineRedirectDelayMs || 0);
-      if (delay <= 0) return;
-
-      const url = CONFIG.offlineRedirectUrl(currentChannel);
-      els.offlineMsg.textContent =
-        `Stream appears offline. Redirecting to the channel page in ${(delay/1000).toFixed(0)}s… ` +
-        `You can also switch channels or retry the player.`;
-
-      offlineRedirectTimer = setTimeout(() => {
-        window.location.href = url;
-      }, delay);
     }
 
     function buildChatUrl(channel) {
@@ -585,17 +609,16 @@
     }
 
     function buildPlayerEmbed() {
-      // Clean container first
       const container = document.getElementById("twitch-embed");
       container.innerHTML = "";
 
       setStatus({
         live: false,
         title: "Loading player…",
-        sub: "If it fails, check parentDomains in CONFIG.",
+        sub: "Parent domain is auto-set for GitHub Pages.",
       });
+
       showOfflineOverlay(false);
-      clearOfflineRedirect();
 
       player = new Twitch.Player("twitch-embed", {
         channel: currentChannel,
@@ -606,18 +629,12 @@
         muted: false
       });
 
-      // Events
       player.addEventListener(Twitch.Player.READY, () => {
-        setStatus({
-          live: false,
-          title: "Player ready",
-          sub: "Waiting for online/offline signal…",
-        });
+        setStatus({ live:false, title:"Player ready", sub:"Waiting for stream status…" });
       });
 
       player.addEventListener(Twitch.Player.ONLINE, () => {
         showOfflineOverlay(false);
-        clearOfflineRedirect();
         setStatus({
           live: true,
           title: "LIVE — WAAAGH IN PROGRESS",
@@ -626,109 +643,36 @@
       });
 
       player.addEventListener(Twitch.Player.OFFLINE, () => {
-        setStatus({
-          live: false,
-          title: "OFFLINE",
-          sub: `Channel: ${currentChannel}`,
-        });
+        setStatus({ live:false, title:"OFFLINE", sub:`Channel: ${currentChannel}` });
         showOfflineOverlay(true);
-        scheduleOfflineRedirect();
+        els.offlineMsg.textContent = "Stream looks offline. You can retry the player or open the Twitch channel.";
       });
 
       player.addEventListener(Twitch.Player.PLAY, () => {
-        // If play starts, assume online-ish
-        setStatus({
-          live: true,
-          title: "PLAYING",
-          sub: `Channel: ${currentChannel}`,
-        });
+        setStatus({ live:true, title:"PLAYING", sub:`Channel: ${currentChannel}` });
         showOfflineOverlay(false);
-        clearOfflineRedirect();
       });
 
-      player.addEventListener(Twitch.Player.ERROR, (e) => {
-        // Often caused by missing/incorrect parent
+      player.addEventListener(Twitch.Player.ERROR, () => {
         setStatus({
           live: false,
           title: "Embed error",
-          sub: "Check CONFIG.parentDomains matches your site domain exactly.",
+          sub: "Usually parent domain mismatch. GitHub Pages should work automatically now.",
         });
         showOfflineOverlay(true);
-        if (!els.offlineMsg.textContent.includes("parentDomains")) {
-          els.offlineMsg.textContent =
-            "Embed error. Most common cause: Twitch requires the correct parent domain(s). " +
-            "Edit CONFIG.parentDomains to match where you’re hosting this page.";
-        }
+        els.offlineMsg.textContent =
+          "Embed error. If it still fails, double-check your GitHub Pages domain and that you're loading from the live URL (not a local file).";
       });
     }
 
     function setActiveChannelUI() {
       els.nowChannel.textContent = currentChannel;
-
       const pills = els.channelControls.querySelectorAll(".pill");
-      pills.forEach(p => {
-        p.classList.toggle("active", p.dataset.channel === currentChannel);
-      });
-    }
-
-    function switchChannel(channel) {
-      if (!channel || channel === currentChannel) return;
-      currentChannel = channel;
-
-      // Update UI
-      setActiveChannelUI();
-
-      // Update chat iframe
-      els.chatFrame.src = buildChatUrl(currentChannel);
-
-      // Rebuild player
-      buildPlayerEmbed();
-
-      // Rebuild multistream tiles too
-      buildMultiStreamGrid();
-    }
-
-    function buildChannelControls() {
-      els.channelControls.innerHTML = "";
-
-      // Channel pills
-      CONFIG.channels.forEach(ch => {
-        const pill = document.createElement("div");
-        pill.className = "pill";
-        pill.textContent = ch;
-        pill.dataset.channel = ch;
-        pill.onclick = () => switchChannel(ch);
-        els.channelControls.appendChild(pill);
-      });
-
-      // Spacer
-      const spacer = document.createElement("div");
-      spacer.style.flex = "1";
-      els.channelControls.appendChild(spacer);
-
-      // Quick buttons
-      const btnChannel = document.createElement("button");
-      btnChannel.className = "btn primary";
-      btnChannel.type = "button";
-      btnChannel.textContent = "Open Channel";
-      btnChannel.onclick = () => window.open(CONFIG.offlineRedirectUrl(currentChannel), "_blank", "noopener,noreferrer");
-      els.channelControls.appendChild(btnChannel);
-
-      const btnVods = document.createElement("button");
-      btnVods.className = "btn";
-      btnVods.type = "button";
-      btnVods.textContent = "VODs";
-      btnVods.onclick = () => window.open(`https://www.twitch.tv/${currentChannel}/videos`, "_blank", "noopener,noreferrer");
-      els.channelControls.appendChild(btnVods);
-
-      setActiveChannelUI();
+      pills.forEach(p => p.classList.toggle("active", p.dataset.channel === currentChannel));
     }
 
     function buildMultiStreamGrid() {
-      // Multi-stream = 2x2 grid of iframes
-      // If you only have 1 channel in CONFIG.channels, add more to see this do anything.
       els.multistreamGrid.innerHTML = "";
-
       const chans = CONFIG.channels.slice(0, 4);
       chans.forEach(ch => {
         const cell = document.createElement("div");
@@ -745,6 +689,50 @@
       });
     }
 
+    function switchChannel(channel) {
+      if (!channel || channel === currentChannel) return;
+      currentChannel = channel;
+
+      setActiveChannelUI();
+      els.chatFrame.src = buildChatUrl(currentChannel);
+
+      buildPlayerEmbed();
+      buildMultiStreamGrid();
+    }
+
+    function buildChannelControls() {
+      els.channelControls.innerHTML = "";
+
+      CONFIG.channels.forEach(ch => {
+        const pill = document.createElement("div");
+        pill.className = "pill";
+        pill.textContent = ch;
+        pill.dataset.channel = ch;
+        pill.onclick = () => switchChannel(ch);
+        els.channelControls.appendChild(pill);
+      });
+
+      const spacer = document.createElement("div");
+      spacer.style.flex = "1";
+      els.channelControls.appendChild(spacer);
+
+      const btnChannel = document.createElement("button");
+      btnChannel.className = "btn primary";
+      btnChannel.type = "button";
+      btnChannel.textContent = "Open Twitch Channel";
+      btnChannel.onclick = () => window.open(CONFIG.offlineRedirectUrl(currentChannel), "_blank", "noopener,noreferrer");
+      els.channelControls.appendChild(btnChannel);
+
+      const btnVods = document.createElement("button");
+      btnVods.className = "btn";
+      btnVods.type = "button";
+      btnVods.textContent = "Twitch VODs";
+      btnVods.onclick = () => window.open(`https://www.twitch.tv/${currentChannel}/videos`, "_blank", "noopener,noreferrer");
+      els.channelControls.appendChild(btnVods);
+
+      setActiveChannelUI();
+    }
+
     function setChatVisible(visible) {
       document.body.classList.toggle("chat-collapsed", !visible);
       els.btnToggleChat.textContent = visible ? "Hide Chat" : "Show Chat";
@@ -755,6 +743,37 @@
       els.btnToggleMulti.textContent = visible ? "Single Stream" : "Multi-stream";
     }
 
+    // ---- TikTok wiring ----
+    function applyTikTokHandle() {
+      const handle = (CONFIG.tiktokHandle || "orcmondo").replace(/^@/, "");
+      const profileUrl = `https://www.tiktok.com/@${handle}`;
+      const liveUrl = CONFIG.tiktokLiveUrl || `${profileUrl}/live`;
+
+      // Update embed blockquote to match handle
+      const blockquote = document.getElementById("tiktokCreatorEmbed");
+      if (blockquote) {
+        blockquote.setAttribute("cite", profileUrl);
+        blockquote.setAttribute("data-unique-id", handle);
+        const a = blockquote.querySelector("a");
+        if (a) {
+          a.href = `${profileUrl}?refer=creator_embed`;
+          a.textContent = `@${handle}`;
+        }
+      }
+
+      // Wire buttons
+      function openTikTok(url){ window.open(url, "_blank", "noopener,noreferrer"); }
+      if (els.btnOpenTikTokLive) els.btnOpenTikTokLive.onclick = () => openTikTok(liveUrl);
+      if (els.btnOpenTikTokLive2) els.btnOpenTikTokLive2.onclick = () => openTikTok(liveUrl);
+      if (els.btnOpenTikTokProfile) els.btnOpenTikTokProfile.onclick = () => openTikTok(profileUrl);
+      if (els.btnOpenTikTokVods) els.btnOpenTikTokVods.onclick = () => openTikTok(profileUrl);
+
+      // Re-process embeds if TikTok embed library is ready
+      if (window.tiktokEmbed && typeof window.tiktokEmbed.load === "function") {
+        window.tiktokEmbed.load();
+      }
+    }
+
     /***********************
      * BUTTONS
      ***********************/
@@ -763,8 +782,8 @@
     els.btnOfflineAction.onclick = () => window.open(CONFIG.offlineRedirectUrl(currentChannel), "_blank", "noopener,noreferrer");
 
     els.btnToggleChat.onclick = () => {
-      const isCollapsed = document.body.classList.contains("chat-collapsed");
-      setChatVisible(isCollapsed);
+      const collapsed = document.body.classList.contains("chat-collapsed");
+      setChatVisible(collapsed);
     };
 
     els.btnToggleMulti.onclick = () => {
@@ -783,10 +802,8 @@
      * INIT
      ***********************/
     (function init() {
-      // Intro: fade out after a moment
       setTimeout(() => els.intro.classList.add("hide"), 1400);
 
-      // Default channel
       currentChannel = CONFIG.defaultChannel;
       els.nowChannel.textContent = currentChannel;
 
@@ -794,22 +811,19 @@
       els.chatFrame.src = buildChatUrl(currentChannel);
       setChatVisible(!!CONFIG.chatStartsVisible);
 
-      // Multi-stream default
+      // Multi-stream
       setMultiStreamVisible(!!CONFIG.multiStreamStartsVisible);
       if (CONFIG.multiStreamStartsVisible) buildMultiStreamGrid();
 
-      // Channel controls
+      // Controls
       buildChannelControls();
 
       // Player
       buildPlayerEmbed();
 
-      // Helpful hint if parentDomains is still localhost but hosted elsewhere
-      if (!CONFIG.parentDomains || !CONFIG.parentDomains.length) {
-        console.warn("CONFIG.parentDomains is empty — Twitch embed will fail.");
-      }
+      // TikTok
+      applyTikTokHandle();
     })();
   </script>
 </body>
 </html>
-
